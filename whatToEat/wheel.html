@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今天吃什么</title>
+  <style>
+    :root {
+      --page-padding: clamp(12px, 2vw, 18px);
+      --panel: rgba(255, 252, 246, 0.92);
+      --panel-strong: rgba(255, 255, 255, 0.72);
+      --line: rgba(104, 86, 55, 0.14);
+      --line-strong: rgba(104, 86, 55, 0.28);
+      --text: #2f2618;
+      --muted: #7c6b52;
+      --accent: #cc7a2f;
+      --accent-strong: #b15c16;
+      --accent-soft: rgba(204, 122, 47, 0.14);
+      --success: #2f7d55;
+      --danger: #a54b35;
+      --shadow: 0 24px 60px rgba(74, 48, 10, 0.12);
+      --radius: 28px;
+      --radius-sm: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 238, 209, 0.92), transparent 28%),
+        radial-gradient(circle at 85% 18%, rgba(224, 202, 150, 0.34), transparent 20%),
+        linear-gradient(145deg, #f7f2ea 0%, #efe5d2 46%, #e6d8bf 100%);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app-shell {
+      width: min(1280px, calc(100vw - 24px));
+      height: calc(100dvh - 24px);
+      margin: 12px auto;
+      padding: var(--page-padding);
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background: rgba(255, 249, 241, 0.72);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+
+    .screen {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .view-stack {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      gap: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .toolbar-spacer {
+      flex: 1;
+    }
+
+    .toolbar-button {
+      padding: 11px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--text);
+      box-shadow: 0 10px 18px rgba(84, 57, 18, 0.08);
+    }
+
+    .primary-button {
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #d9914d 0%, #bb6727 100%);
+      color: #fff7ef;
+      font-weight: 700;
+      box-shadow: 0 14px 22px rgba(177, 92, 22, 0.24);
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .wheel-layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) minmax(280px, 0.78fr);
+      gap: 16px;
+    }
+
+    .wheel-panel {
+      position: relative;
+      min-height: 0;
+      padding: 18px 18px 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .wheel-stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      width: 100%;
+    }
+
+    .wheel-stage canvas {
+      width: min(100%, 76vh, 720px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+      display: block;
+      filter: drop-shadow(0 22px 26px rgba(62, 39, 8, 0.12));
+    }
+
+    .pointer {
+      position: absolute;
+      top: max(10px, 1.4vh);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 32px solid #8d4323;
+      z-index: 2;
+      filter: drop-shadow(0 8px 10px rgba(89, 36, 12, 0.24));
+    }
+
+    .wheel-center-button {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(116px, 16vw, 148px);
+      height: clamp(116px, 16vw, 148px);
+      border-radius: 50%;
+      background: linear-gradient(180deg, #fffaf3 0%, #f8ebd5 100%);
+      border: 8px solid rgba(255, 255, 255, 0.92);
+      box-shadow:
+        inset 0 -10px 20px rgba(177, 92, 22, 0.12),
+        0 16px 24px rgba(62, 39, 8, 0.14);
+      color: var(--accent-strong);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 14px;
+      z-index: 3;
+    }
+
+    .wheel-center-button:hover:not(:disabled) {
+      transform: translate(-50%, -50%);
+    }
+
+    .wheel-center-button:disabled {
+      transform: translate(-50%, -50%);
+    }
+
+    .wheel-center-button:focus-visible:not(:disabled),
+    .wheel-center-button:active:not(:disabled) {
+      transform: translate(-50%, -50%);
+    }
+
+    .wheel-center-button span {
+      display: block;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .wheel-center-button strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.02rem;
+      letter-spacing: 0.08em;
+    }
+
+    .status-text {
+      flex: 0 0 auto;
+      margin: 10px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      min-height: 1.4em;
+    }
+
+    .info-column {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(128px, 0.34fr) minmax(0, 0.66fr);
+      gap: 16px;
+    }
+
+    .result-card,
+    .history-card,
+    .batch-card,
+    .items-card {
+      min-height: 0;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .meta-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .result-value {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      min-height: 0;
+      flex: 1;
+      font-size: clamp(1.5rem, 3.4vw, 2.25rem);
+      line-height: 1.18;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .result-meta {
+      margin: 8px 0 0;
+      color: var(--success);
+      font-size: 0.94rem;
+      line-height: 1.55;
+    }
+
+    .history-scroll,
+    .items-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .history-list,
+    .config-items-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item,
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+    }
+
+    .history-item strong {
+      flex: 1;
+      font-size: 0.98rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .history-item span {
+      color: var(--muted);
+      font-size: 0.86rem;
+      flex-shrink: 0;
+    }
+
+    .empty-text {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .config-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      gap: 14px;
+    }
+
+    .config-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(280px, 0.46fr) minmax(0, 0.54fr);
+      gap: 16px;
+    }
+
+    .section-copy {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+
+    .batch-input {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      resize: none;
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--text);
+      line-height: 1.75;
+      outline: none;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .batch-input:focus,
+    .config-item-input:focus {
+      border-color: rgba(177, 92, 22, 0.58);
+      box-shadow: 0 0 0 4px rgba(177, 92, 22, 0.12);
+    }
+
+    .batch-actions {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .items-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .items-count {
+      color: var(--muted);
+      font-size: 0.92rem;
+      white-space: nowrap;
+    }
+
+    .config-item-index {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .config-item-input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--text);
+      outline: none;
+    }
+
+    .ghost-button {
+      flex-shrink: 0;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(165, 75, 53, 0.08);
+      color: var(--danger);
+    }
+
+    @media (max-width: 980px) {
+      .wheel-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) minmax(180px, 0.36fr);
+      }
+
+      .info-column {
+        grid-template-columns: minmax(220px, 0.92fr) minmax(0, 1.08fr);
+        grid-template-rows: 1fr;
+      }
+
+      .config-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(220px, 0.42fr) minmax(0, 0.58fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        width: calc(100vw - 12px);
+        height: calc(100dvh - 12px);
+        margin: 6px auto;
+        padding: 10px;
+        border-radius: 24px;
+      }
+
+      .toolbar {
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-spacer {
+        display: none;
+      }
+
+      .toolbar-button,
+      .primary-button,
+      .ghost-button {
+        padding: 11px 14px;
+      }
+
+      .wheel-stage canvas {
+        width: min(100%, 72vh);
+      }
+
+      .info-column {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(112px, auto) minmax(0, 1fr);
+      }
+
+      .config-item {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <section id="view-wheel" class="screen">
+      <div class="view-stack">
+        <div class="toolbar">
+          <div class="toolbar-spacer"></div>
+          <button id="view-config-button" class="toolbar-button" type="button">配置</button>
+          <button id="clear-history" class="toolbar-button" type="button">清空记录</button>
+        </div>
+
+        <div class="wheel-layout">
+          <section class="panel wheel-panel">
+            <div class="wheel-stage">
+              <div class="pointer" aria-hidden="true"></div>
+              <canvas id="wheel-canvas" width="640" height="640" aria-label="今天吃什么转盘"></canvas>
+              <button id="spin-button" class="wheel-center-button" type="button">
+                <span id="spin-button-text">点我抽取</span>
+                <strong>今天吃什么</strong>
+              </button>
+            </div>
+            <p id="status-text" class="status-text">正在载入今天的菜单配置…</p>
+          </section>
+
+          <aside class="info-column">
+            <section class="panel result-card">
+              <p class="meta-label">今日结果</p>
+              <p id="result-label" class="result-value">等待开始</p>
+              <p id="result-meta" class="result-meta">点击转盘中心，帮你决定这一顿吃什么。</p>
+            </section>
+
+            <section class="panel history-card">
+              <div class="items-head">
+                <p class="meta-label">最近记录</p>
+                <span id="history-count" class="items-count">0 条</span>
+              </div>
+              <div class="history-scroll">
+                <ul id="history-list" class="history-list"></ul>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-config" class="screen" hidden>
+      <div class="config-layout">
+        <div class="toolbar">
+          <button id="back-to-wheel-button" class="toolbar-button" type="button">返回转盘</button>
+          <div class="toolbar-spacer"></div>
+          <button id="add-single-item-button" class="toolbar-button" type="button">新增一条</button>
+        </div>
+
+        <div class="config-grid">
+          <section class="panel batch-card">
+            <p class="meta-label">批量新增</p>
+            <p class="section-copy">一行一个内容，支持一次粘贴多条。点击“加入列表”后会直接生效，不需要额外保存。</p>
+            <textarea id="config-batch-input" class="batch-input" spellcheck="false" placeholder="例如：&#10;红烧肉&#10;番茄鸡蛋面&#10;麻辣香锅"></textarea>
+            <div class="batch-actions">
+              <button id="add-batch-button" class="primary-button" type="button">加入列表</button>
+            </div>
+          </section>
+
+          <section class="panel items-card">
+            <div class="items-head">
+              <p class="meta-label">当前菜单</p>
+              <span id="config-count" class="items-count">共 0 条</span>
+            </div>
+            <div class="items-scroll">
+              <ul id="config-items-list" class="config-items-list"></ul>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const wheelConfig = {
+      items: [
+        { label: "红烧肉" },
+        { label: "番茄鸡蛋面" },
+        { label: "麻辣香锅" },
+        { label: "黄焖鸡米饭" },
+        { label: "牛肉粉" },
+        { label: "饺子" }
+      ]
+    };
+
+    (function () {
+      const HISTORY_STORAGE_KEY = "wheel-history-v1";
+      const CONFIG_STORAGE_KEY = "wheel-config-v1";
+      const HISTORY_LIMIT = 10;
+      const TAU = Math.PI * 2;
+      const BASE_START_ANGLE = -Math.PI / 2;
+      const palette = [
+        "#f4d9b1",
+        "#eebf7b",
+        "#dca56f",
+        "#f1cfa4",
+        "#d8b17f",
+        "#f5ddb8",
+        "#f0c48f",
+        "#e5b073"
+      ];
+
+      function sanitizeItems(items) {
+        if (!Array.isArray(items)) {
+          return [];
+        }
+        return items
+          .map((item) => ({
+            label: typeof item?.label === "string" ? item.label.trim() : ""
+          }))
+          .filter((item) => item.label);
+      }
+
+      function editorTextToItems(text) {
+        return sanitizeItems(String(text)
+          .split(/\r?\n/)
+          .map((line) => ({ label: line })));
+      }
+
+      function appendItems(existingItems, editorText) {
+        return sanitizeItems([
+          ...sanitizeItems(existingItems),
+          ...editorTextToItems(editorText)
+        ]);
+      }
+
+      function pushHistory(history, label, limit = HISTORY_LIMIT) {
+        const entry = {
+          label,
+          timestamp: new Date().toISOString()
+        };
+        return [entry, ...history].slice(0, limit);
+      }
+
+      function normalizeAngle(angle) {
+        return ((angle % TAU) + TAU) % TAU;
+      }
+
+      function computeSpinRotation(itemCount, winnerIndex, fullSpins = 5) {
+        if (itemCount <= 0) {
+          return 0;
+        }
+        const segmentAngle = TAU / itemCount;
+        return fullSpins * TAU - (winnerIndex * segmentAngle + segmentAngle / 2);
+      }
+
+      function getWinningIndex(itemCount, rotation) {
+        if (itemCount <= 0) {
+          return -1;
+        }
+        const segmentAngle = TAU / itemCount;
+        const effectiveAngle = normalizeAngle(-normalizeAngle(rotation) - segmentAngle / 2);
+        return Math.floor((effectiveAngle + 1e-9) / segmentAngle) % itemCount;
+      }
+
+      function loadHistory(storage, key = HISTORY_STORAGE_KEY) {
+        try {
+          const rawValue = storage.getItem(key);
+          if (!rawValue) {
+            return [];
+          }
+          const parsed = JSON.parse(rawValue);
+          if (!Array.isArray(parsed)) {
+            return [];
+          }
+          return parsed
+            .filter((entry) => entry && typeof entry.label === "string")
+            .map((entry) => ({
+              label: entry.label,
+              timestamp: typeof entry.timestamp === "string" ? entry.timestamp : ""
+            }))
+            .slice(0, HISTORY_LIMIT);
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function saveHistory(storage, history, key = HISTORY_STORAGE_KEY) {
+        storage.setItem(key, JSON.stringify(history.slice(0, HISTORY_LIMIT)));
+      }
+
+      function loadConfigItems(storage, fallbackItems, key = CONFIG_STORAGE_KEY) {
+        try {
+          const rawValue = storage.getItem(key);
+          if (!rawValue) {
+            return sanitizeItems(fallbackItems);
+          }
+          return sanitizeItems(JSON.parse(rawValue));
+        } catch (error) {
+          return sanitizeItems(fallbackItems);
+        }
+      }
+
+      function saveConfigItems(storage, items, key = CONFIG_STORAGE_KEY) {
+        storage.setItem(key, JSON.stringify(sanitizeItems(items)));
+      }
+
+      function formatTimestamp(timestamp) {
+        if (!timestamp) {
+          return "刚刚";
+        }
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) {
+          return "刚刚";
+        }
+        return date.toLocaleString("zh-CN", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      function fitText(ctx, text, maxWidth, baseSize) {
+        let fontSize = baseSize;
+        while (fontSize > 12) {
+          ctx.font = `600 ${fontSize}px "Segoe UI", "PingFang SC", sans-serif`;
+          if (ctx.measureText(text).width <= maxWidth) {
+            return { text, fontSize };
+          }
+          fontSize -= 1;
+        }
+        let trimmed = text;
+        while (trimmed.length > 2) {
+          const candidate = `${trimmed.slice(0, -1)}…`;
+          ctx.font = '600 12px "Segoe UI", "PingFang SC", sans-serif';
+          if (ctx.measureText(candidate).width <= maxWidth) {
+            return { text: candidate, fontSize: 12 };
+          }
+          trimmed = trimmed.slice(0, -1);
+        }
+        return { text: text.slice(0, 2), fontSize: 12 };
+      }
+
+      function createWheelLabelLines(text) {
+        const normalized = String(text || "").trim();
+        if (!normalized) {
+          return [""];
+        }
+        if (normalized.length <= 4) {
+          return [normalized];
+        }
+        if (normalized.length <= 8) {
+          const splitIndex = Math.ceil(normalized.length / 2);
+          return [normalized.slice(0, splitIndex), normalized.slice(splitIndex)];
+        }
+        return [normalized.slice(0, 4), `${normalized.slice(4, 7)}…`];
+      }
+
+      function createWheelApp(config) {
+        const canvas = document.getElementById("wheel-canvas");
+        const ctx = canvas.getContext("2d");
+        const spinButton = document.getElementById("spin-button");
+        const spinButtonText = document.getElementById("spin-button-text");
+        const viewConfigButton = document.getElementById("view-config-button");
+        const clearHistoryButton = document.getElementById("clear-history");
+        const historyCount = document.getElementById("history-count");
+        const backToWheelButton = document.getElementById("back-to-wheel-button");
+        const addSingleItemButton = document.getElementById("add-single-item-button");
+        const addBatchButton = document.getElementById("add-batch-button");
+        const batchInput = document.getElementById("config-batch-input");
+        const configCount = document.getElementById("config-count");
+        const configItemsList = document.getElementById("config-items-list");
+        const resultLabel = document.getElementById("result-label");
+        const resultMeta = document.getElementById("result-meta");
+        const historyList = document.getElementById("history-list");
+        const statusText = document.getElementById("status-text");
+        const wheelView = document.getElementById("view-wheel");
+        const configView = document.getElementById("view-config");
+
+        const state = {
+          items: loadConfigItems(localStorage, config.items),
+          history: loadHistory(localStorage),
+          rotation: 0,
+          spinning: false,
+          lastResult: "",
+          activeWinnerIndex: -1
+        };
+
+        function persistItems() {
+          saveConfigItems(localStorage, state.items);
+        }
+
+        function updateConfigMeta() {
+          configCount.textContent = `共 ${state.items.length} 条`;
+        }
+
+        function renderHistory() {
+          historyList.replaceChildren();
+          historyCount.textContent = `${state.history.length} 条`;
+
+          if (!state.history.length) {
+            const empty = document.createElement("li");
+            empty.className = "empty-text";
+            empty.textContent = "还没有抽取记录，点一下转盘中心试试。";
+            historyList.appendChild(empty);
+            return;
+          }
+
+          state.history.forEach((entry) => {
+            const li = document.createElement("li");
+            li.className = "history-item";
+
+            const label = document.createElement("strong");
+            label.textContent = entry.label;
+
+            const meta = document.createElement("span");
+            meta.textContent = formatTimestamp(entry.timestamp);
+
+            li.appendChild(label);
+            li.appendChild(meta);
+            historyList.appendChild(li);
+          });
+        }
+
+        function commitItemEdit(index, value) {
+          const nextLabel = String(value).trim();
+          if (!nextLabel) {
+            state.items.splice(index, 1);
+          } else {
+            state.items[index] = { label: nextLabel };
+          }
+          persistItems();
+          renderConfigItems();
+          refreshWheelState();
+        }
+
+        function renderConfigItems() {
+          configItemsList.replaceChildren();
+          updateConfigMeta();
+
+          if (!state.items.length) {
+            const empty = document.createElement("li");
+            empty.className = "empty-text";
+            empty.textContent = "现在还没有菜单内容，可以左侧批量加入，或者点“新增一条”。";
+            configItemsList.appendChild(empty);
+            return;
+          }
+
+          state.items.forEach((item, index) => {
+            const li = document.createElement("li");
+            li.className = "config-item";
+
+            const order = document.createElement("div");
+            order.className = "config-item-index";
+            order.textContent = String(index + 1).padStart(2, "0");
+
+            const input = document.createElement("input");
+            input.className = "config-item-input";
+            input.type = "text";
+            input.value = item.label;
+            input.placeholder = "输入吃什么";
+            input.addEventListener("keydown", (event) => {
+              if (event.key === "Enter") {
+                input.blur();
+              }
+            });
+            input.addEventListener("blur", () => {
+              commitItemEdit(index, input.value);
+            });
+
+            const removeButton = document.createElement("button");
+            removeButton.className = "ghost-button";
+            removeButton.type = "button";
+            removeButton.textContent = "删除";
+            removeButton.addEventListener("click", () => {
+              state.items.splice(index, 1);
+              persistItems();
+              renderConfigItems();
+              refreshWheelState();
+            });
+
+            li.appendChild(order);
+            li.appendChild(input);
+            li.appendChild(removeButton);
+            configItemsList.appendChild(li);
+          });
+        }
+
+        function drawEmptyWheel(message) {
+          const size = Math.min(canvas.width, canvas.height);
+          const center = size / 2;
+          const radius = size * 0.38;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.save();
+          ctx.translate(center, center);
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, TAU);
+          ctx.fillStyle = "#f8ebd5";
+          ctx.fill();
+          ctx.lineWidth = 18;
+          ctx.strokeStyle = "rgba(177, 92, 22, 0.22)";
+          ctx.stroke();
+          ctx.fillStyle = "#7a6544";
+          ctx.font = '600 24px "Segoe UI", "PingFang SC", sans-serif';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(message, 0, 0);
+          ctx.restore();
+        }
+
+        function drawWheel() {
+          if (!state.items.length) {
+            drawEmptyWheel("先去配置");
+            return;
+          }
+
+          const size = Math.min(canvas.width, canvas.height);
+          const center = size / 2;
+          const radius = size * 0.38;
+          const segmentAngle = TAU / state.items.length;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.save();
+          ctx.translate(center, center);
+          ctx.rotate(state.rotation);
+
+          state.items.forEach((item, index) => {
+            const startAngle = BASE_START_ANGLE + index * segmentAngle;
+            const endAngle = startAngle + segmentAngle;
+            const isWinner = index === state.activeWinnerIndex;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = palette[index % palette.length];
+            ctx.fill();
+
+            ctx.lineWidth = isWinner ? 6 : 2;
+            ctx.strokeStyle = isWinner ? "#8d4323" : "rgba(104, 86, 55, 0.14)";
+            ctx.stroke();
+
+            const textAngle = startAngle + segmentAngle / 2;
+            ctx.save();
+            ctx.rotate(textAngle);
+            ctx.translate(radius * 0.72, 0);
+            ctx.rotate(Math.PI / 2);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#4b3821";
+            const lines = createWheelLabelLines(item.label);
+            const lineHeight = 15;
+            const baseSize = Math.min(18, 12 + 24 / state.items.length);
+
+            lines.forEach((line, lineIndex) => {
+              const fitted = fitText(ctx, line, radius * 0.42, baseSize);
+              ctx.font = `700 ${fitted.fontSize}px "Segoe UI", "PingFang SC", sans-serif`;
+              const offsetY = (lineIndex - (lines.length - 1) / 2) * lineHeight;
+              ctx.fillText(fitted.text, 0, offsetY);
+            });
+            ctx.restore();
+          });
+
+          ctx.beginPath();
+          ctx.arc(0, 0, radius + 10, 0, TAU);
+          ctx.lineWidth = 16;
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.88)";
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function updateControls() {
+          spinButton.disabled = state.spinning || !state.items.length;
+          clearHistoryButton.disabled = !state.history.length;
+          spinButtonText.textContent = state.spinning
+            ? "抽取中…"
+            : (state.items.length ? "点我抽取" : "先去配置");
+        }
+
+        function setStatus(message) {
+          statusText.textContent = message;
+        }
+
+        function setResult(label, detail) {
+          resultLabel.textContent = label || "等待开始";
+          resultMeta.textContent = detail || "点击转盘中心，帮你决定这一顿吃什么。";
+        }
+
+        function persistHistory() {
+          saveHistory(localStorage, state.history);
+        }
+
+        function switchView(nextView) {
+          wheelView.hidden = nextView !== "wheel";
+          configView.hidden = nextView !== "config";
+          if (nextView === "config") {
+            renderConfigItems();
+          }
+        }
+
+        function refreshWheelState() {
+          state.activeWinnerIndex = -1;
+          state.rotation = 0;
+          updateControls();
+          drawWheel();
+          renderHistory();
+          renderConfigItems();
+
+          if (!state.items.length) {
+            setResult("暂无菜单", "去配置页加几条内容后，再回来点转盘中心。");
+            setStatus("当前没有菜单内容，请先去配置。");
+            return;
+          }
+
+          if (state.items.length === 1) {
+            setResult(state.lastResult || "唯一选项", "当前只有一个内容，点击转盘中心会快速定格。");
+            setStatus("当前只有一个内容，点击后会直接给出结果。");
+            return;
+          }
+
+          if (!state.lastResult) {
+            setResult("等待开始", "点击转盘中心，帮你决定这一顿吃什么。");
+          }
+          setStatus(`当前共有 ${state.items.length} 个内容，点转盘中心开始抽取。`);
+        }
+
+        function finishSpin(winnerIndex) {
+          state.spinning = false;
+          state.activeWinnerIndex = winnerIndex;
+          const winner = state.items[winnerIndex];
+          state.lastResult = winner.label;
+          state.history = pushHistory(state.history, winner.label);
+          persistHistory();
+          setResult(winner.label, "结果已加入最近记录，可以继续点中心再来一次。");
+          setStatus(`今天吃：${winner.label}`);
+          renderHistory();
+          updateControls();
+          drawWheel();
+        }
+
+        function animateTo(targetRotation, winnerIndex, duration) {
+          const startRotation = state.rotation;
+          const startTime = performance.now();
+
+          const tick = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            state.rotation = startRotation + (targetRotation - startRotation) * eased;
+            drawWheel();
+
+            if (progress < 1) {
+              requestAnimationFrame(tick);
+              return;
+            }
+
+            state.rotation = targetRotation;
+            finishSpin(winnerIndex);
+          };
+
+          requestAnimationFrame(tick);
+        }
+
+        function spin() {
+          if (state.spinning || !state.items.length) {
+            return;
+          }
+
+          if (state.items.length === 1) {
+            state.spinning = true;
+            updateControls();
+            setStatus("只有一个内容，直接给出结果。");
+            animateTo(state.rotation + TAU * 0.35, 0, 320);
+            return;
+          }
+
+          state.spinning = true;
+          state.activeWinnerIndex = -1;
+          updateControls();
+          setStatus("转盘旋转中，请稍候…");
+          setResult("正在抽取…", "动画结束后会自动显示今天吃什么。");
+
+          const winnerIndex = Math.floor(Math.random() * state.items.length);
+          const currentNormalized = normalizeAngle(state.rotation);
+          const targetNormalized = normalizeAngle(computeSpinRotation(state.items.length, winnerIndex, 0));
+          let delta = normalizeAngle(targetNormalized - currentNormalized);
+          if (delta < Math.PI / 1.5) {
+            delta += TAU;
+          }
+          const finalRotation = state.rotation + TAU * 5 + delta;
+
+          animateTo(finalRotation, winnerIndex, 4200);
+        }
+
+        function clearHistory() {
+          state.history = [];
+          localStorage.removeItem(HISTORY_STORAGE_KEY);
+          renderHistory();
+          updateControls();
+          setStatus(state.items.length ? "记录已清空，可以重新开始。" : "请先去配置页添加内容。");
+        }
+
+        function addBatchItems() {
+          const nextItems = appendItems(state.items, batchInput.value);
+          state.items = nextItems;
+          persistItems();
+          batchInput.value = "";
+          refreshWheelState();
+        }
+
+        function addSingleItem() {
+          state.items = appendItems(state.items, "待编辑内容");
+          persistItems();
+          renderConfigItems();
+          refreshWheelState();
+
+          const lastInput = configItemsList.querySelector(".config-item:last-child .config-item-input");
+          if (lastInput) {
+            lastInput.focus();
+            lastInput.select();
+          }
+        }
+
+        function init() {
+          refreshWheelState();
+          switchView("wheel");
+
+          spinButton.addEventListener("click", spin);
+          viewConfigButton.addEventListener("click", () => switchView("config"));
+          backToWheelButton.addEventListener("click", () => switchView("wheel"));
+          clearHistoryButton.addEventListener("click", clearHistory);
+          addBatchButton.addEventListener("click", addBatchItems);
+          addSingleItemButton.addEventListener("click", addSingleItem);
+        }
+
+        return {
+          state,
+          spin,
+          clearHistory,
+          init
+        };
+      }
+
+      const app = createWheelApp(wheelConfig);
+      app.init();
+
+      globalThis.__wheelTestApi = {
+        sanitizeItems,
+        editorTextToItems,
+        appendItems,
+        createWheelLabelLines,
+        pushHistory,
+        computeSpinRotation,
+        getWinningIndex,
+        loadHistory,
+        loadConfigItems
+      };
+    })();
+  </script>
+</body>
+</html>
