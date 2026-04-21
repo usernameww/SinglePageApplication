@@ -237,6 +237,25 @@
       min-height: 1.4em;
     }
 
+    .mobile-result-toast {
+      display: none;
+      margin: 12px 0 0;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: rgba(47, 125, 85, 0.12);
+      color: var(--success);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .mobile-result-toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     .info-column {
       min-height: 0;
       display: grid;
@@ -427,6 +446,79 @@
       color: var(--danger);
     }
 
+    .mobile-only {
+      display: none;
+    }
+
+    .mobile-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(47, 38, 24, 0.28);
+      backdrop-filter: blur(4px);
+      z-index: 20;
+    }
+
+    .mobile-config-drawer {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 21;
+      padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+      border-radius: 24px 24px 0 0;
+      background: rgba(255, 249, 241, 0.98);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -18px 36px rgba(62, 39, 8, 0.16);
+    }
+
+    .mobile-drawer-handle {
+      width: 48px;
+      height: 5px;
+      border-radius: 999px;
+      margin: 0 auto 14px;
+      background: rgba(124, 107, 82, 0.28);
+    }
+
+    .mobile-drawer-actions,
+    .mobile-drawer-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mobile-drawer-form {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 22;
+      padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+      border-radius: 24px 24px 0 0;
+      background: rgba(255, 249, 241, 0.98);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -18px 36px rgba(62, 39, 8, 0.16);
+    }
+
+    .mobile-drawer-card {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--text);
+    }
+
+    .mobile-drawer-card strong,
+    .mobile-drawer-form strong {
+      display: block;
+      font-size: 0.98rem;
+      margin-bottom: 4px;
+    }
+
+    .mobile-drawer-card span,
+    .mobile-drawer-form span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
     @media (max-width: 980px) {
       .wheel-layout {
         grid-template-columns: 1fr;
@@ -482,6 +574,14 @@
         padding: 11px 14px;
       }
 
+      .mobile-only {
+        display: inline-flex;
+      }
+
+      .config-grid {
+        display: block;
+      }
+
       .wheel-stage canvas {
         width: min(100%, 72vh);
       }
@@ -493,6 +593,32 @@
 
       .history-card {
         min-height: 180px;
+      }
+
+      .result-card {
+        display: none !important;
+      }
+
+      .mobile-result-toast {
+        display: block;
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        z-index: 19;
+      }
+
+      .mobile-config-drawer {
+        position: fixed;
+      }
+
+      .batch-card {
+        display: none;
+      }
+
+      .add-single-item-button,
+      #add-single-item-button {
+        display: none;
       }
 
       .config-item {
@@ -553,6 +679,10 @@
           <button id="add-single-item-button" class="toolbar-button" type="button">新增一条</button>
         </div>
 
+        <div class="toolbar mobile-only">
+          <button id="manage-menu-button" class="toolbar-button mobile-only" type="button">管理菜单</button>
+        </div>
+
         <div class="config-grid">
           <section class="panel batch-card">
             <p class="meta-label">批量新增</p>
@@ -575,6 +705,39 @@
         </div>
       </div>
     </section>
+    <div id="mobile-config-drawer-backdrop" class="mobile-drawer-backdrop" hidden></div>
+    <section id="mobile-config-drawer" class="mobile-config-drawer" hidden>
+      <div class="mobile-drawer-handle"></div>
+      <div class="mobile-drawer-actions">
+        <button id="mobile-open-single-form" class="mobile-drawer-card" type="button">
+          <strong>新增单项</strong>
+          <span>快速增加一个菜单项，适合临时补充。</span>
+        </button>
+        <button id="mobile-open-batch-form" class="mobile-drawer-card" type="button">
+          <strong>批量导入</strong>
+          <span>粘贴多行内容，一次性加入当前菜单列表。</span>
+        </button>
+      </div>
+    </section>
+    <div id="mobile-single-form" class="mobile-drawer-form" hidden>
+      <button id="mobile-drawer-back-button" class="toolbar-button" type="button">返回菜单</button>
+      <div>
+        <strong>新增单项</strong>
+        <span>输入一个新的菜单项，提交后会直接加入列表。</span>
+      </div>
+      <input id="mobile-single-input" class="config-item-input" type="text" placeholder="输入吃什么">
+      <button id="mobile-submit-single" class="primary-button" type="button">加入列表</button>
+    </div>
+    <div id="mobile-batch-form" class="mobile-drawer-form" hidden>
+      <button id="mobile-drawer-back-button-batch" class="toolbar-button" type="button">返回菜单</button>
+      <div>
+        <strong>批量导入</strong>
+        <span>每行一个内容，提交后会直接更新菜单列表。</span>
+      </div>
+      <textarea id="mobile-batch-input" class="batch-input" spellcheck="false" placeholder="例如：&#10;红烧肉&#10;番茄鸡蛋面"></textarea>
+      <button id="mobile-submit-batch" class="primary-button" type="button">加入列表</button>
+    </div>
+    <p id="mobile-result-toast" class="mobile-result-toast" hidden></p>
   </main>
 
   <script>
@@ -771,8 +934,22 @@
         const resultMeta = document.getElementById("result-meta");
         const historyList = document.getElementById("history-list");
         const statusText = document.getElementById("status-text");
+        const mobileResultToast = document.getElementById("mobile-result-toast");
         const wheelView = document.getElementById("view-wheel");
         const configView = document.getElementById("view-config");
+        const manageMenuButton = document.getElementById("manage-menu-button");
+        const mobileDrawerBackdrop = document.getElementById("mobile-config-drawer-backdrop");
+        const mobileConfigDrawer = document.getElementById("mobile-config-drawer");
+        const mobileOpenSingleFormButton = document.getElementById("mobile-open-single-form");
+        const mobileOpenBatchFormButton = document.getElementById("mobile-open-batch-form");
+        const mobileSingleForm = document.getElementById("mobile-single-form");
+        const mobileBatchForm = document.getElementById("mobile-batch-form");
+        const mobileSingleInput = document.getElementById("mobile-single-input");
+        const mobileBatchInput = document.getElementById("mobile-batch-input");
+        const mobileSubmitSingleButton = document.getElementById("mobile-submit-single");
+        const mobileSubmitBatchButton = document.getElementById("mobile-submit-batch");
+        const mobileDrawerBackButton = document.getElementById("mobile-drawer-back-button");
+        const mobileDrawerBackButtonBatch = document.getElementById("mobile-drawer-back-button-batch");
 
         const state = {
           items: loadConfigItems(localStorage, config.items),
@@ -780,8 +957,10 @@
           rotation: 0,
           spinning: false,
           lastResult: "",
-          activeWinnerIndex: -1
+          activeWinnerIndex: -1,
+          editingItemIndex: -1
         };
+        let mobileResultToastTimer = 0;
 
         function persistItems() {
           saveConfigItems(localStorage, state.items);
@@ -979,6 +1158,21 @@
           statusText.textContent = message;
         }
 
+        function showMobileResultToast(label) {
+          if (!label) {
+            return;
+          }
+
+          clearTimeout(mobileResultToastTimer);
+          mobileResultToast.hidden = false;
+          mobileResultToast.textContent = `宸叉娊涓細${label}`;
+          mobileResultToast.classList.add("is-visible");
+          mobileResultToastTimer = setTimeout(() => {
+            mobileResultToast.classList.remove("is-visible");
+            mobileResultToast.hidden = true;
+          }, 2600);
+        }
+
         function setResult(label, detail) {
           resultLabel.textContent = label || "等待开始";
           resultMeta.textContent = detail || "点击转盘中心，帮你决定这一顿吃什么。";
@@ -988,9 +1182,36 @@
           saveHistory(localStorage, state.history);
         }
 
+        function openMobileDrawer(mode = "menu") {
+          const drawerActions = mobileConfigDrawer.querySelector(".mobile-drawer-actions");
+          mobileConfigDrawer.hidden = mode !== "menu";
+          mobileDrawerBackdrop.hidden = false;
+          mobileConfigDrawer.dataset.mode = mode;
+          if (drawerActions) {
+            drawerActions.hidden = mode !== "menu";
+          }
+          mobileSingleForm.hidden = mode !== "single";
+          mobileBatchForm.hidden = mode !== "batch";
+        }
+
+        function closeMobileDrawer() {
+          const drawerActions = mobileConfigDrawer.querySelector(".mobile-drawer-actions");
+          mobileConfigDrawer.hidden = true;
+          mobileDrawerBackdrop.hidden = true;
+          mobileConfigDrawer.dataset.mode = "menu";
+          if (drawerActions) {
+            drawerActions.hidden = false;
+          }
+          mobileSingleForm.hidden = true;
+          mobileBatchForm.hidden = true;
+        }
+
         function switchView(nextView) {
           wheelView.hidden = nextView !== "wheel";
           configView.hidden = nextView !== "config";
+          if (nextView !== "config") {
+            closeMobileDrawer();
+          }
           if (nextView === "config") {
             renderConfigItems();
           }
@@ -1032,6 +1253,7 @@
           setResult(winner.label, "结果已加入最近记录，可以继续点中心再来一次。");
           setStatus(`今天吃：${winner.label}`);
           renderHistory();
+          showMobileResultToast(winner.label);
           updateControls();
           drawWheel();
         }
@@ -1099,11 +1321,13 @@
         }
 
         function addBatchItems() {
-          const nextItems = appendItems(state.items, batchInput.value);
+          const sourceInput = mobileConfigDrawer.dataset.mode === "batch" ? mobileBatchInput : batchInput;
+          const nextItems = appendItems(state.items, sourceInput.value);
           state.items = nextItems;
           persistItems();
-          batchInput.value = "";
+          sourceInput.value = "";
           refreshWheelState();
+          closeMobileDrawer();
         }
 
         function addSingleItem() {
@@ -1119,6 +1343,18 @@
           }
         }
 
+        function addSingleItemFromMobileInput() {
+          const nextValue = String(mobileSingleInput.value || "").trim();
+          if (!nextValue) {
+            return;
+          }
+          state.items = appendItems(state.items, nextValue);
+          persistItems();
+          mobileSingleInput.value = "";
+          refreshWheelState();
+          closeMobileDrawer();
+        }
+
         function init() {
           refreshWheelState();
           switchView("wheel");
@@ -1129,6 +1365,14 @@
           clearHistoryButton.addEventListener("click", clearHistory);
           addBatchButton.addEventListener("click", addBatchItems);
           addSingleItemButton.addEventListener("click", addSingleItem);
+          manageMenuButton.addEventListener("click", () => openMobileDrawer("menu"));
+          mobileDrawerBackdrop.addEventListener("click", closeMobileDrawer);
+          mobileOpenSingleFormButton.addEventListener("click", () => openMobileDrawer("single"));
+          mobileOpenBatchFormButton.addEventListener("click", () => openMobileDrawer("batch"));
+          mobileDrawerBackButton.addEventListener("click", () => openMobileDrawer("menu"));
+          mobileDrawerBackButtonBatch.addEventListener("click", () => openMobileDrawer("menu"));
+          mobileSubmitSingleButton.addEventListener("click", addSingleItemFromMobileInput);
+          mobileSubmitBatchButton.addEventListener("click", addBatchItems);
         }
 
         return {

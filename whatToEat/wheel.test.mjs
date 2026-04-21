@@ -319,3 +319,59 @@ runTest('mobile layout lets the history section expand instead of being squeezed
     /@media \(max-width: 640px\)\s*\{[\s\S]*?\.info-column\s*\{[\s\S]*?grid-template-rows:\s*auto\s+auto;/,
   );
 });
+
+runTest('mobile layout hides the result card and shows a transient result toast area', () => {
+  const html = loadWheelHtml();
+
+  assert.match(
+    html,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.result-card\s*\{[\s\S]*?display:\s*none\s*!important;/,
+  );
+
+  assert.match(
+    html,
+    /id="mobile-result-toast"[\s\S]*?class="mobile-result-toast"/,
+  );
+
+  assert.match(
+    html,
+    /function showMobileResultToast\(label\)[\s\S]*?mobileResultToast\.hidden = false;/,
+  );
+});
+
+runTest('mobile config view uses a bottom drawer with quick action entries', () => {
+  const html = loadWheelHtml();
+
+  assert.match(html, /id="manage-menu-button"/);
+  assert.match(html, /id="mobile-config-drawer"/);
+  assert.match(html, /id="mobile-open-single-form"/);
+  assert.match(html, /id="mobile-open-batch-form"/);
+  assert.match(
+    html,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.mobile-config-drawer\s*\{[\s\S]*?position:\s*fixed;/,
+  );
+});
+
+runTest('mobile config layout prioritizes the list and keeps batch import inside drawer mode', () => {
+  const html = loadWheelHtml();
+
+  assert.match(
+    html,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.config-grid\s*\{[\s\S]*?display:\s*block;/,
+  );
+
+  assert.match(
+    html,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.batch-card\s*\{[\s\S]*?display:\s*none;/,
+  );
+
+  assert.match(
+    html,
+    /function openMobileDrawer\(mode = "menu"\)[\s\S]*?mobileConfigDrawer\.dataset\.mode = mode;/,
+  );
+
+  assert.match(
+    html,
+    /function addBatchItems\(\)[\s\S]*?closeMobileDrawer\(\);/,
+  );
+});
