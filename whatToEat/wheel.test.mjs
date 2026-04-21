@@ -300,3 +300,22 @@ runTest('createWheelLabelLines formats long labels into at most two readable lin
     ['新疆和田', '烤肉拌饭'],
   );
 });
+
+runTest('mobile layout lets the history section expand instead of being squeezed out', () => {
+  const html = loadWheelHtml();
+
+  assert.match(
+    html,
+    /@media \(max-width: 980px\)\s*\{[\s\S]*?\.wheel-layout\s*\{[\s\S]*?grid-template-rows:\s*auto\s+auto;/,
+  );
+
+  assert.match(
+    html,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.app-shell\s*\{[\s\S]*?height:\s*auto;[\s\S]*?min-height:\s*calc\(100dvh - 12px\);[\s\S]*?overflow:\s*visible;/,
+  );
+
+  assert.match(
+    html,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.info-column\s*\{[\s\S]*?grid-template-rows:\s*auto\s+auto;/,
+  );
+});
