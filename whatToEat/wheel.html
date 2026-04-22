@@ -384,15 +384,30 @@
     .items-head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 10px;
       margin-bottom: 12px;
+    }
+
+    .items-head .meta-label {
+      margin-right: auto;
+    }
+
+    .items-head .items-count {
+      order: 3;
     }
 
     .items-count {
       color: var(--muted);
       font-size: 0.92rem;
       white-space: nowrap;
+    }
+
+    .compact-button {
+      order: 2;
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      box-shadow: 0 8px 14px rgba(84, 57, 18, 0.07);
     }
 
     .config-item-index {
@@ -655,6 +670,7 @@
 
           <section class="panel items-card">
             <div class="items-head">
+              <button id="copy-items-button" class="toolbar-button compact-button" type="button">&#22797;&#21046;</button>
               <p class="meta-label">当前菜单</p>
               <span id="config-count" class="items-count">共 0 条</span>
             </div>
@@ -726,6 +742,12 @@
         return sanitizeItems(String(text)
           .split(/\r?\n/)
           .map((line) => ({ label: line })));
+      }
+
+      function itemsToEditorText(items) {
+        return sanitizeItems(items)
+          .map((item) => item.label)
+          .join("\n");
       }
 
       function appendItems(existingItems, editorText) {
@@ -871,6 +893,7 @@
         const openMobileBatchImportButton = document.getElementById("open-mobile-batch-import-button");
         const addBatchButton = document.getElementById("add-batch-button");
         const batchInput = document.getElementById("config-batch-input");
+        const copyItemsButton = document.getElementById("copy-items-button");
         const configCount = document.getElementById("config-count");
         const configItemsList = document.getElementById("config-items-list");
         const resultLabel = document.getElementById("result-label");
@@ -1080,6 +1103,7 @@
         function updateControls() {
           spinButton.disabled = state.spinning || !state.items.length;
           clearHistoryButton.disabled = !state.history.length;
+          copyItemsButton.disabled = !state.items.length;
           spinButtonText.textContent = state.spinning
             ? "抽取中…"
             : (state.items.length ? "点我抽取" : "先去配置");
@@ -1096,6 +1120,26 @@
 
         function persistHistory() {
           saveHistory(localStorage, state.history);
+        }
+
+        async function copyItemsToClipboard() {
+          if (!state.items.length) {
+            setStatus("\u5f53\u524d\u6ca1\u6709\u83dc\u5355\u5185\u5bb9\uff0c\u6682\u65f6\u65e0\u6cd5\u590d\u5236\u3002");
+            return;
+          }
+
+          const clipboard = globalThis.navigator?.clipboard;
+          if (!clipboard?.writeText) {
+            setStatus("\u5f53\u524d\u73af\u5883\u4e0d\u652f\u6301\u526a\u8d34\u677f\u590d\u5236\u3002");
+            return;
+          }
+
+          try {
+            await clipboard.writeText(itemsToEditorText(state.items));
+            setStatus(`\u5df2\u590d\u5236 ${state.items.length} \u9879\uff0c\u53ef\u76f4\u63a5\u7c98\u8d34\u5230\u5bfc\u5165\u5217\u8868\u3002`);
+          } catch (error) {
+            setStatus("\u590d\u5236\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u526a\u8d34\u677f\u6743\u9650\u3002");
+          }
         }
 
         function openMobileBatchImport() {
@@ -1251,6 +1295,9 @@
           clearHistoryButton.addEventListener("click", clearHistory);
           addBatchButton.addEventListener("click", addBatchItems);
           addSingleItemButton.addEventListener("click", addSingleItem);
+          copyItemsButton.addEventListener("click", () => {
+            void copyItemsToClipboard();
+          });
           openMobileBatchImportButton.addEventListener("click", openMobileBatchImport);
           backToConfigButton.addEventListener("click", () => switchView("config"));
           submitMobileBatchButton.addEventListener("click", () => addBatchItems("mobile"));
@@ -1270,6 +1317,7 @@
       globalThis.__wheelTestApi = {
         sanitizeItems,
         editorTextToItems,
+        itemsToEditorText,
         appendItems,
         createWheelLabelLines,
         pushHistory,

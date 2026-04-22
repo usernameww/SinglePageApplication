@@ -281,6 +281,19 @@ runTest('appendItems keeps existing labels and appends parsed batch items', () =
   ]);
 });
 
+runTest('itemsToEditorText serializes menu labels as newline-delimited text', () => {
+  const api = loadWheelTestApi();
+
+  assert.equal(
+    api.itemsToEditorText([
+      { label: '绾㈢儳鑲?' },
+      { label: '鐣寗楦¤泲闈?' },
+      { label: '楹昏荆棣欓攨' },
+    ]),
+    '绾㈢儳鑲?\n鐣寗楦¤泲闈?\n楹昏荆棣欓攨',
+  );
+});
+
 runTest('wheel center button keeps centered transform on hover', () => {
   const html = loadWheelHtml();
 
@@ -358,6 +371,15 @@ runTest('mobile config toolbar uses direct actions instead of the old drawer men
   assert.doesNotMatch(html, /id="manage-menu-button"/);
   assert.doesNotMatch(html, /id="mobile-config-drawer"/);
   assert.doesNotMatch(html, /返回菜单/);
+});
+
+runTest('config items card exposes a small copy button near the current menu heading', () => {
+  const html = loadWheelHtml();
+
+  assert.match(
+    html,
+    /<div class="items-head">[\s\S]*?<button id="copy-items-button" class="toolbar-button compact-button" type="button">[\s\S]*?<\/button>[\s\S]*?<p class="meta-label">当前菜单<\/p>/,
+  );
 });
 
 runTest('mobile batch import uses a dedicated full-screen panel with a larger textarea', () => {
