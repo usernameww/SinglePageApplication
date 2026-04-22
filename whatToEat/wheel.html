@@ -237,25 +237,6 @@
       min-height: 1.4em;
     }
 
-    .mobile-result-toast {
-      display: none;
-      margin: 12px 0 0;
-      padding: 10px 14px;
-      border-radius: 16px;
-      background: rgba(47, 125, 85, 0.12);
-      color: var(--success);
-      font-size: 0.92rem;
-      line-height: 1.5;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 180ms ease, transform 180ms ease;
-    }
-
-    .mobile-result-toast.is-visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
     .info-column {
       min-height: 0;
       display: grid;
@@ -575,15 +556,6 @@
         display: none !important;
       }
 
-      .mobile-result-toast {
-        display: block;
-        position: fixed;
-        left: 10px;
-        right: 10px;
-        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-        z-index: 19;
-      }
-
       .batch-card {
         display: none;
       }
@@ -708,7 +680,6 @@
         </section>
       </div>
     </section>
-    <p id="mobile-result-toast" class="mobile-result-toast" hidden></p>
   </main>
 
   <script>
@@ -906,7 +877,6 @@
         const resultMeta = document.getElementById("result-meta");
         const historyList = document.getElementById("history-list");
         const statusText = document.getElementById("status-text");
-        const mobileResultToast = document.getElementById("mobile-result-toast");
         const wheelView = document.getElementById("view-wheel");
         const configView = document.getElementById("view-config");
         const mobileBatchImportView = document.getElementById("view-mobile-batch-import");
@@ -923,8 +893,6 @@
           activeWinnerIndex: -1,
           editingItemIndex: -1
         };
-        let mobileResultToastTimer = 0;
-
         function persistItems() {
           saveConfigItems(localStorage, state.items);
         }
@@ -1121,21 +1089,6 @@
           statusText.textContent = message;
         }
 
-        function showMobileResultToast(label) {
-          if (!label) {
-            return;
-          }
-
-          clearTimeout(mobileResultToastTimer);
-          mobileResultToast.hidden = false;
-          mobileResultToast.textContent = `抽中了：${label}`;
-          mobileResultToast.classList.add("is-visible");
-          mobileResultToastTimer = setTimeout(() => {
-            mobileResultToast.classList.remove("is-visible");
-            mobileResultToast.hidden = true;
-          }, 2600);
-        }
-
         function setResult(label, detail) {
           resultLabel.textContent = label || "等待开始";
           resultMeta.textContent = detail || "点击转盘中心，帮你决定这一顿吃什么。";
@@ -1196,7 +1149,6 @@
           setResult(winner.label, "结果已加入最近记录，可以继续点中心再来一次。");
           setStatus(`今天吃：${winner.label}`);
           renderHistory();
-          showMobileResultToast(winner.label);
           updateControls();
           drawWheel();
         }

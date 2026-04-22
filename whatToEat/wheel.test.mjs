@@ -317,8 +317,15 @@ runTest('page copy uses readable chinese labels instead of mojibake', () => {
   assert.match(html, />新增</);
   assert.match(html, />批量导入</);
   assert.match(html, />返回转盘</);
-  assert.match(html, /抽中了：\$\{label\}/);
   assert.doesNotMatch(html, /閰嶇疆|娓呯┖璁板綍|杩斿洖鑿滃崟|鎶藉彇涓/);
+});
+
+runTest('mobile result no longer renders a transient toast after drawing a winner', () => {
+  const html = loadWheelHtml();
+
+  assert.doesNotMatch(html, /id="mobile-result-toast"/);
+  assert.doesNotMatch(html, /function showMobileResultToast\(label\)/);
+  assert.doesNotMatch(html, /抽中了：\$\{label\}/);
 });
 
 runTest('mobile layout keeps viewport fixed and moves scroll into the history list', () => {
