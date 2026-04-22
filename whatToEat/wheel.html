@@ -710,6 +710,22 @@
       ]
     };
 
+    wheelConfig.items = [
+      { label: "\u65b0\u8363\u548c" },
+      { label: "\u8d85\u610f\u5174" },
+      { label: "\u91d1\u5fb7\u5229\u6c11" },
+      { label: "\u9e21\u86cb\u677f\u9762" },
+      { label: "\u897f\u7ea2\u67ff\u9e21\u86cb\u9762/\u7092\u9e21" },
+      { label: "\u4e09\u6c5f\u6e90\u7684\u9762" },
+      { label: "\u9a74\u8089\u7c89\u4e1d\u6c64" },
+      { label: "\u56db\u5ddd\u9762\u9986" },
+      { label: "K88\u677f\u51f3\u9762" },
+      { label: "\u7f8a\u6392\u624b\u6293\u996d" },
+      { label: "\u8001\u5976\u5976\u9762" },
+      { label: "\u8054\u56db\u8def\u5176\u4ed6\u7684" },
+      { label: "\u9752\u5c71\u91cc" }
+    ];
+
     (function () {
       const HISTORY_STORAGE_KEY = "wheel-history-v1";
       const CONFIG_STORAGE_KEY = "wheel-config-v1";
@@ -1315,6 +1331,7 @@
       app.init();
 
       globalThis.__wheelTestApi = {
+        defaultWheelItems: wheelConfig.items,
         sanitizeItems,
         editorTextToItems,
         itemsToEditorText,

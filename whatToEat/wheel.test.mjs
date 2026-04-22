@@ -294,6 +294,29 @@ runTest('itemsToEditorText serializes menu labels as newline-delimited text', ()
   );
 });
 
+runTest('default wheel config seeds the requested menu list', () => {
+  const api = loadWheelTestApi();
+
+  assert.deepEqual(
+    toPlain(api.defaultWheelItems).map((item) => item.label),
+    [
+      '\u65b0\u8363\u548c',
+      '\u8d85\u610f\u5174',
+      '\u91d1\u5fb7\u5229\u6c11',
+      '\u9e21\u86cb\u677f\u9762',
+      '\u897f\u7ea2\u67ff\u9e21\u86cb\u9762/\u7092\u9e21',
+      '\u4e09\u6c5f\u6e90\u7684\u9762',
+      '\u9a74\u8089\u7c89\u4e1d\u6c64',
+      '\u56db\u5ddd\u9762\u9986',
+      'K88\u677f\u51f3\u9762',
+      '\u7f8a\u6392\u624b\u6293\u996d',
+      '\u8001\u5976\u5976\u9762',
+      '\u8054\u56db\u8def\u5176\u4ed6\u7684',
+      '\u9752\u5c71\u91cc',
+    ],
+  );
+});
+
 runTest('wheel center button keeps centered transform on hover', () => {
   const html = loadWheelHtml();
 
