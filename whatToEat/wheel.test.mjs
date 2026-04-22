@@ -51,12 +51,18 @@ function createExecutionContext() {
     ['clear-history', createElementStub()],
     ['back-to-wheel-button', createElementStub()],
     ['add-single-item-button', createElementStub()],
+    ['open-mobile-batch-import-button', createElementStub()],
     ['add-batch-button', createElementStub()],
     ['config-batch-input', createElementStub()],
     ['config-count', createElementStub()],
     ['config-items-list', createElementStub()],
     ['view-wheel', createElementStub()],
     ['view-config', createElementStub()],
+    ['view-mobile-batch-import', createElementStub()],
+    ['mobile-result-toast', createElementStub()],
+    ['back-to-config-button', createElementStub()],
+    ['submit-mobile-batch-button', createElementStub()],
+    ['mobile-batch-input', createElementStub()],
   ]);
 
   const document = {
@@ -119,6 +125,10 @@ function createElementStub() {
     dataset: {},
     children: [],
     style: {},
+    classList: {
+      add() {},
+      remove() {},
+    },
     appendChild(child) {
       this.children.push(child);
       return child;
@@ -210,13 +220,13 @@ runTest('sanitizeItems trims labels and removes empty entries', () => {
   const api = loadWheelTestApi();
 
   assert.deepEqual(toPlain(api.sanitizeItems([
-    { label: '  早会抽签  ' },
+    { label: '  晨会抽签  ' },
     { label: '' },
     { label: '  ' },
     {},
     { label: '复盘主持' },
   ])), [
-    { label: '早会抽签' },
+    { label: '晨会抽签' },
     { label: '复盘主持' },
   ]);
 });
@@ -246,10 +256,8 @@ runTest('editorTextToItems converts non-empty lines into labels', () => {
 
   assert.deepEqual(toPlain(api.editorTextToItems(`
     红烧肉
-
     宫保鸡丁
-      番茄鸡蛋面
-  `)), [
+      番茄鸡蛋面  `)), [
     { label: '红烧肉' },
     { label: '宫保鸡丁' },
     { label: '番茄鸡蛋面' },
@@ -265,8 +273,7 @@ runTest('appendItems keeps existing labels and appends parsed batch items', () =
   ], `
     麻辣香锅
 
-    牛肉粉
-  `)), [
+    牛肉粉  `)), [
     { label: '红烧肉' },
     { label: '番茄鸡蛋面' },
     { label: '麻辣香锅' },
@@ -301,77 +308,80 @@ runTest('createWheelLabelLines formats long labels into at most two readable lin
   );
 });
 
-runTest('mobile layout lets the history section expand instead of being squeezed out', () => {
+runTest('page copy uses readable chinese labels instead of mojibake', () => {
+  const html = loadWheelHtml();
+
+  assert.match(html, /<title>今天吃什么<\/title>/);
+  assert.match(html, />配置</);
+  assert.match(html, />清空记录</);
+  assert.match(html, />新增</);
+  assert.match(html, />批量导入</);
+  assert.match(html, />返回转盘</);
+  assert.match(html, /抽中了：\$\{label\}/);
+  assert.doesNotMatch(html, /閰嶇疆|娓呯┖璁板綍|杩斿洖鑿滃崟|鎶藉彇涓/);
+});
+
+runTest('mobile layout keeps viewport fixed and moves scroll into the history list', () => {
   const html = loadWheelHtml();
 
   assert.match(
     html,
-    /@media \(max-width: 980px\)\s*\{[\s\S]*?\.wheel-layout\s*\{[\s\S]*?grid-template-rows:\s*auto\s+auto;/,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?html,\s*body\s*\{[\s\S]*?height:\s*100%;[\s\S]*?overflow:\s*hidden;/,
   );
 
   assert.match(
     html,
-    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.app-shell\s*\{[\s\S]*?height:\s*auto;[\s\S]*?min-height:\s*calc\(100dvh - 12px\);[\s\S]*?overflow:\s*visible;/,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.app-shell\s*\{[\s\S]*?height:\s*calc\(100dvh - 12px\);[\s\S]*?overflow:\s*hidden;/,
   );
 
   assert.match(
     html,
-    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.info-column\s*\{[\s\S]*?grid-template-rows:\s*auto\s+auto;/,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.history-scroll\s*\{[\s\S]*?overflow-y:\s*auto;/,
   );
 });
 
-runTest('mobile layout hides the result card and shows a transient result toast area', () => {
+runTest('mobile config toolbar uses direct actions instead of the old drawer menu', () => {
   const html = loadWheelHtml();
 
   assert.match(
     html,
-    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.result-card\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    /<div class="toolbar config-toolbar">[\s\S]*?id="add-single-item-button"[\s\S]*?新增[\s\S]*?id="open-mobile-batch-import-button"[\s\S]*?批量导入[\s\S]*?id="back-to-wheel-button"[\s\S]*?返回转盘/s,
   );
 
-  assert.match(
-    html,
-    /id="mobile-result-toast"[\s\S]*?class="mobile-result-toast"/,
-  );
+  assert.doesNotMatch(html, /id="manage-menu-button"/);
+  assert.doesNotMatch(html, /id="mobile-config-drawer"/);
+  assert.doesNotMatch(html, /返回菜单/);
+});
 
+runTest('mobile batch import uses a dedicated full-screen panel with a larger textarea', () => {
+  const html = loadWheelHtml();
+
+  assert.match(html, /id="view-mobile-batch-import"/);
+  assert.match(html, /id="back-to-config-button"/);
+  assert.match(html, /id="submit-mobile-batch-button"/);
   assert.match(
     html,
-    /function showMobileResultToast\(label\)[\s\S]*?mobileResultToast\.hidden = false;/,
+    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.batch-import-input\s*\{[\s\S]*?min-height:\s*42dvh;/,
   );
 });
 
-runTest('mobile config view uses a bottom drawer with quick action entries', () => {
+runTest('mobile add action still appends a placeholder item and focuses inline editing', () => {
   const html = loadWheelHtml();
 
-  assert.match(html, /id="manage-menu-button"/);
-  assert.match(html, /id="mobile-config-drawer"/);
-  assert.match(html, /id="mobile-open-single-form"/);
-  assert.match(html, /id="mobile-open-batch-form"/);
-  assert.match(
-    html,
-    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.mobile-config-drawer\s*\{[\s\S]*?position:\s*fixed;/,
-  );
+  assert.match(html, /function addSingleItem\(\)[\s\S]*?appendItems\(state\.items,\s*"待编辑内容"\)/);
+  assert.match(html, /function addSingleItem\(\)[\s\S]*?lastInput\.focus\(\);/);
 });
 
-runTest('mobile config layout prioritizes the list and keeps batch import inside drawer mode', () => {
+runTest('mobile batch import switches to its own view instead of opening a drawer', () => {
   const html = loadWheelHtml();
 
   assert.match(
     html,
-    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.config-grid\s*\{[\s\S]*?display:\s*block;/,
+    /function openMobileBatchImport\(\)[\s\S]*?switchView\("mobile-batch-import"\);/,
   );
 
   assert.match(
     html,
-    /@media \(max-width: 640px\)\s*\{[\s\S]*?\.batch-card\s*\{[\s\S]*?display:\s*none;/,
-  );
-
-  assert.match(
-    html,
-    /function openMobileDrawer\(mode = "menu"\)[\s\S]*?mobileConfigDrawer\.dataset\.mode = mode;/,
-  );
-
-  assert.match(
-    html,
-    /function addBatchItems\(\)[\s\S]*?closeMobileDrawer\(\);/,
+    /function addBatchItems\(source = "desktop"\)[\s\S]*?if \(source === "mobile"\)[\s\S]*?switchView\("config"\);/,
   );
 });
